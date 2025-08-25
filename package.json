@@ -1,11 +1,9 @@
 {
-  "name": "metone-webserial",
-  "private": true,
-  "version": "1.0.0",
   "scripts": {
     "dev": "npx http-server ./public -p 5173 -c-1 --cors",
-    "deploy": "bash ./deploy.sh",
-    "deploy:scp": "pwsh -File ./deploy.ps1"
-  },
-  "devDependencies": {}
+    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy.ps1",
+    "deploy:debug": "powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy.ps1 -DebugMode",
+    "deploy:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy.ps1 -DryRun -DebugMode"
+  }
 }
+
