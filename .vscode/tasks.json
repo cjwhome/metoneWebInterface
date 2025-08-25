@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Deploy (rsync)",
+      "type": "shell",
+      "command": "npm run deploy",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy (scp)",
+      "type": "shell",
+      "command": "npm run deploy:scp",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev server",
+      "type": "shell",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}
