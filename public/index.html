@@ -1,268 +1,1007 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Met One 3315 – WebSerial Interface</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    :root{--bg:#0b1020;--card:#121a33;--muted:#9fb0d0;--fg:#e7efff;--acc:#66d0ff;--ok:#32d296;--warn:#ffdd57;--bad:#ff6b6b;--btn:#1b2547;--line:#223055}
-    *{box-sizing:border-box}
-    body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:14px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-    h1{margin:0 0 16px 0;font-size:20px}
-    .row{display:flex;gap:16px;flex-wrap:wrap}
-    .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);flex:1}
-    .kv{background:#0e1630;padding:8px 10px;border-radius:10px}
-    .kv b{display:block;font-size:12px;color:var(--muted)}
-    .kv span{font-size:14px}
-    button{background:var(--btn);color:var(--fg);border:1px solid #273160;border-radius:10px;padding:10px 14px;cursor:pointer}
-    button.primary{background:var(--acc);color:#06121e;border-color:transparent;font-weight:700}
-    button.ghost{background:transparent}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    #terminal{height:260px;overflow:auto;background:#0a1127;border-radius:10px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre-wrap;border:1px solid var(--line)}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#0e1630;border:1px solid #21305d}
-    .status-dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
-    .status-dot.run{background:var(--ok)}
-    .status-dot.stop{background:var(--bad)}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .field{display:flex;gap:6px;align-items:center}
-    input[type=number]{width:80px;background:#0e1630;border:1px solid #21305d;border-radius:8px;color:var(--fg);padding:6px 8px}
-    .hint{color:var(--muted);font-size:12px}
-    .tabs{display:flex;gap:8px;margin-bottom:8px}
-    .tabs button{padding:8px 10px;border-radius:10px}
-    .tabs .active{background:#25305b}
-    canvas{background:#0a1127;border-radius:10px;padding:8px}
-    .grid{display:grid;gap:8px}
-    .grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-    .grid.cols-auto{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
-  </style>
-</head>
-<body>
-  <h1>Met One 3315 – WebSerial Interface <span class="pill"><i class="status-dot" id="modeDot"></i><span id="modeText">DISCONNECTED</span></span></h1>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Met One 3315 – WebSerial Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #121a33;
+        --muted: #9fb0d0;
+        --fg: #e7efff;
+        --acc: #66d0ff;
+        --ok: #32d296;
+        --warn: #ffdd57;
+        --bad: #ff6b6b;
+        --btn: #1b2547;
+        --line: #223055;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.4 Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          sans-serif;
+      }
+      h1 {
+        margin: 0 0 16px 0;
+        font-size: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+        flex: 1;
+      }
+      .kv {
+        background: #0e1630;
+        padding: 8px 10px;
+        border-radius: 10px;
+      }
+      .kv b {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .kv span {
+        font-size: 14px;
+      }
+      button {
+        background: var(--btn);
+        color: var(--fg);
+        border: 1px solid #273160;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--acc);
+        color: #06121e;
+        border-color: transparent;
+        font-weight: 700;
+      }
+      button.ghost {
+        background: transparent;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #terminal {
+        height: 260px;
+        overflow: auto;
+        background: #0a1127;
+        border-radius: 10px;
+        padding: 10px;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        border: 1px solid var(--line);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #0e1630;
+        border: 1px solid #21305d;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--warn);
+      }
+      .status-dot.run {
+        background: var(--ok);
+      }
+      .status-dot.stop {
+        background: var(--bad);
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .field {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      input[type="number"] {
+        width: 80px;
+        background: #0e1630;
+        border: 1px solid #21305d;
+        border-radius: 8px;
+        color: var(--fg);
+        padding: 6px 8px;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .tabs button {
+        padding: 8px 10px;
+        border-radius: 10px;
+      }
+      .tabs .active {
+        background: #25305b;
+      }
+      canvas {
+        background: #0a1127;
+        border-radius: 10px;
+        padding: 8px;
+      }
+      .grid {
+        display: grid;
+        gap: 8px;
+      }
+      .grid.cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .grid.cols-auto {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      Met One 3315 – WebSerial Interface
+      <span class="pill"
+        ><i class="status-dot" id="modeDot"></i
+        ><span id="modeText">DISCONNECTED</span></span
+      >
+    </h1>
 
-  <div class="row wrap">
-    <div class="card" style="max-width:980px">
-      <div class="row" style="gap:12px">
-        <div class="kv"><b>Port</b><span id="portName">—</span></div>
-        <div class="kv"><b>Model</b><span id="model">—</span></div>
-        <div class="kv"><b>Mode</b><span id="mode">Idle</span></div>
+    <div class="row wrap">
+      <div class="card" style="max-width: 980px">
+        <div class="row" style="gap: 12px">
+          <div class="kv"><b>Port</b><span id="portName">—</span></div>
+          <div class="kv"><b>Model</b><span id="model">—</span></div>
+          <div class="kv"><b>Mode</b><span id="mode">Idle</span></div>
+        </div>
+        <div class="controls">
+          <button id="btnConnect" class="primary">Connect</button>
+          <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
+        </div>
+        <div
+          class="controls"
+          style="border-top: 1px solid var(--line); padding-top: 10px"
+        >
+          <button id="btnEnterUniversal">
+            Enter Universal ('U' until echo)
+          </button>
+          <button id="btnIdentify" disabled>Identify ('T')</button>
+          <button id="btnAuto" disabled>Auto Start ('a'+'d')</button>
+          <button id="btnPollOnce" disabled>Poll Record Once ('A')</button>
+          <button id="btnStandby" class="ghost" disabled>Standby ('h')</button>
+          <button id="btnClearDevice" class="ghost" disabled>
+            Clear device buffer ('C')
+          </button>
+          <span class="hint"
+            >Idle after Connect. Nothing runs until you press a button.</span
+          >
+        </div>
+        <div
+          class="controls"
+          style="border-top: 1px solid var(--line); padding-top: 10px"
+        >
+          <button id="btnPickFile" disabled>Pick CSV file…</button>
+          <span class="field"
+            >Every
+            <input id="saveEvery" type="number" min="1" value="10" /> s</span
+          >
+          <button id="btnAutoSaveEnable" disabled>Enable Auto‑Save</button>
+          <button id="btnAutoSaveDisable" disabled>Stop Auto‑Save</button>
+          <button id="btnExportNow" disabled>Export Buffer CSV</button>
+          <button id="btnClearLocal" disabled>Clear Local Buffer</button>
+          <span class="hint" id="saveHint">auto‑save not set</span>
+        </div>
       </div>
-      <div class="controls">
-        <button id="btnConnect" class="primary">Connect</button>
-        <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
-      </div>
-      <div class="controls" style="border-top:1px solid var(--line);padding-top:10px">
-        <button id="btnEnterUniversal">Enter Universal ('U' until echo)</button>
-        <button id="btnIdentify" disabled>Identify ('T')</button>
-        <button id="btnAuto" disabled>Auto Start ('a'+'d')</button>
-        <button id="btnPollOnce" disabled>Poll Record Once ('A')</button>
-        <button id="btnStandby" class="ghost" disabled>Standby ('h')</button>
-        <button id="btnClearDevice" class="ghost" disabled>Clear device buffer ('C')</button>
-        <span class="hint">Idle after Connect. Nothing runs until you press a button.</span>
-      </div>
-      <div class="controls" style="border-top:1px solid var(--line);padding-top:10px">
-        <button id="btnPickFile" disabled>Pick CSV file…</button>
-        <span class="field">Every <input id="saveEvery" type="number" min="1" value="10"> s</span>
-        <button id="btnAutoSaveEnable" disabled>Enable Auto‑Save</button>
-        <button id="btnAutoSaveDisable" disabled>Stop Auto‑Save</button>
-        <button id="btnExportNow" disabled>Export Buffer CSV</button>
-        <button id="btnClearLocal" disabled>Clear Local Buffer</button>
-        <span class="hint" id="saveHint">auto‑save not set</span>
+
+      <div class="card" style="min-width: 320px; max-width: 980px">
+        <div class="tabs">
+          <button data-tab="raw" class="active">Raw</button>
+          <button data-tab="latest">Latest</button>
+          <button data-tab="graphs">Graphs</button>
+        </div>
+
+        <div id="tab-raw">
+          <div id="terminal"></div>
+        </div>
+
+        <div id="tab-latest" hidden>
+          <div class="grid cols-4">
+            <div class="kv"><b>Date</b><span id="kvDate">—</span></div>
+            <div class="kv"><b>Time</b><span id="kvTime">—</span></div>
+            <div class="kv"><b>Period (s)</b><span id="kvPeriod">—</span></div>
+            <div class="kv"><b>Location</b><span id="kvLoc">—</span></div>
+          </div>
+          <div
+            class="grid cols-auto"
+            id="latestChannels"
+            style="margin-top: 8px"
+          ></div>
+          <div class="grid cols-4" style="margin-top: 8px">
+            <div class="kv"><b>Flow</b><span id="kvFLO">—</span></div>
+            <div class="kv"><b>Checksum</b><span id="kvCS">—</span></div>
+          </div>
+        </div>
+
+        <div id="tab-graphs" hidden>
+          <div
+            style="
+              display: flex;
+              gap: 12px;
+              flex-wrap: wrap;
+              align-items: center;
+              margin-bottom: 8px;
+            "
+          >
+            <button id="btnPause">Pause</button>
+            <label
+              ><input type="checkbox" id="chkRolling" /> Rolling avg (5)</label
+            >
+            <label
+              ><input type="checkbox" id="chkAutoY" checked /> Auto
+              Y‑axis</label
+            >
+          </div>
+          <div class="row wrap">
+            <div class="card" style="min-width: 300px">
+              <canvas id="chartCounts"></canvas>
+            </div>
+            <div class="card" style="min-width: 300px">
+              <canvas id="chartFLO"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card" style="min-width:320px;max-width:980px">
-      <div class="tabs">
-        <button data-tab="raw" class="active">Raw</button>
-        <button data-tab="latest">Latest</button>
-        <button data-tab="graphs">Graphs</button>
-      </div>
+    <script>
+      /*************** Helpers & UI ***************/
+      const $ = (s) => document.querySelector(s);
+      const $$ = (s) => document.querySelectorAll(s);
+      const logEl = $("#terminal");
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      function log(msg, dir = "sys") {
+        const ts = new Date().toLocaleTimeString();
+        const arrow = dir === "tx" ? "→" : dir === "rx" ? "←" : "*";
+        logEl.textContent += `[${ts}] ${arrow} ${msg}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      function setMode(m) {
+        $("#mode").textContent = m;
+        $("#modeText").textContent = m;
+        const d = $("#modeDot");
+        d.className = "status-dot";
+        if (m === "Counting") d.classList.add("run");
+        if (m === "Stopped") d.classList.add("stop");
+      }
+      function setModel(s) {
+        $("#model").textContent = s || "—";
+      }
+      function updateUi() {
+        const connected = !!port;
+        $("#btnEnterUniversal").disabled = !connected || universalOK;
+        $("#btnIdentify").disabled = !connected || !universalOK;
+        $("#btnAuto").disabled = !connected || !universalOK;
+        $("#btnPollOnce").disabled = !connected || !universalOK;
+        $("#btnStandby").disabled = !connected || !universalOK;
+        $("#btnClearDevice").disabled = !connected || !universalOK;
+        $("#btnPickFile").disabled = !connected;
+        $("#btnExportNow").disabled = !connected;
+        $("#btnClearLocal").disabled = !connected;
+        $("#btnAutoSaveEnable").disabled = !connected;
+      }
 
-      <div id="tab-raw">
-        <div id="terminal"></div>
-      </div>
+      /*************** Serial state ***************/
+      let port, writer;
+      let universalOK = false;
+      let autoTimer = null;
+      let modeTimer = null;
+      let ioBusy = false;
+      async function writeChar(ch) {
+        if (!writer) return;
+        await writer.write(new Uint8Array([ch.charCodeAt(0)]));
+        log("'" + ch + "'", "tx");
+      }
+      async function readLine({ timeoutMs = 2500, drainMs = 100 } = {}) {
+        if (!port) return "";
+        const reader = port.readable.getReader();
+        const td = new TextDecoder();
+        let text = "";
+        let timer;
+        try {
+          timer = setTimeout(() => {
+            try {
+              reader.cancel();
+            } catch {}
+          }, timeoutMs);
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (value) {
+              text += td.decode(value, { stream: true });
+              if (/\r|\n/.test(text)) {
+                await sleep(drainMs);
+                const tail = await reader.read();
+                if (tail && tail.value)
+                  text += td.decode(tail.value, { stream: true });
+                break;
+              }
+            }
+          }
+        } catch (_) {
+        } finally {
+          clearTimeout(timer);
+          reader.releaseLock();
+        }
+        const out = (text || "").trim();
+        if (out) log(JSON.stringify(out), "rx");
+        return out;
+      }
+      async function readChar({ timeoutMs = 800 } = {}) {
+        if (!port) return "";
+        const reader = port.readable.getReader();
+        const td = new TextDecoder();
+        let out = "";
+        let timer;
+        try {
+          timer = setTimeout(() => {
+            try {
+              reader.cancel();
+            } catch {}
+          }, timeoutMs);
+          const { value } = await reader.read();
+          if (value) out = td.decode(value).trim();
+        } catch (_) {
+        } finally {
+          clearTimeout(timer);
+          reader.releaseLock();
+        }
+        if (out) log(JSON.stringify(out), "rx");
+        return out;
+      }
 
-      <div id="tab-latest" hidden>
-        <div class="grid cols-4">
-          <div class="kv"><b>Date</b><span id="kvDate">—</span></div>
-          <div class="kv"><b>Time</b><span id="kvTime">—</span></div>
-          <div class="kv"><b>Period (s)</b><span id="kvPeriod">—</span></div>
-          <div class="kv"><b>Location</b><span id="kvLoc">—</span></div>
-        </div>
-        <div class="grid cols-auto" id="latestChannels" style="margin-top:8px"></div>
-        <div class="grid cols-4" style="margin-top:8px">
-          <div class="kv"><b>Flow</b><span id="kvFLO">—</span></div>
-          <div class="kv"><b>Checksum</b><span id="kvCS">—</span></div>
-        </div>
-      </div>
-
-      <div id="tab-graphs" hidden>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-          <button id="btnPause">Pause</button>
-          <label><input type="checkbox" id="chkRolling"> Rolling avg (5)</label>
-          <label><input type="checkbox" id="chkAutoY" checked> Auto Y‑axis</label>
-        </div>
-        <div class="row wrap">
-          <div class="card" style="min-width:300px"><canvas id="chartCounts"></canvas></div>
-          <div class="card" style="min-width:300px"><canvas id="chartFLO"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  /*************** Helpers & UI ***************/
-  const $ = (s)=>document.querySelector(s);
-  const $$ = (s)=>document.querySelectorAll(s);
-  const logEl = $('#terminal');
-  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
-  function log(msg, dir='sys'){ const ts=new Date().toLocaleTimeString(); const arrow=dir==='tx'?'→':dir==='rx'?'←':'*'; logEl.textContent += `[${ts}] ${arrow} ${msg}\n`; logEl.scrollTop=logEl.scrollHeight; }
-  function setMode(m){ $('#mode').textContent=m; $('#modeText').textContent=m; const d=$('#modeDot'); d.className='status-dot'; if(m==='Counting') d.classList.add('run'); if(m==='Stopped') d.classList.add('stop'); }
-  function setModel(s){ $('#model').textContent=s||'—'; }
-  function updateUi(){ const connected=!!port; $('#btnEnterUniversal').disabled=!connected||universalOK; $('#btnIdentify').disabled=!connected||!universalOK; $('#btnAuto').disabled=!connected||!universalOK; $('#btnPollOnce').disabled=!connected||!universalOK; $('#btnStandby').disabled=!connected||!universalOK; $('#btnClearDevice').disabled=!connected||!universalOK; $('#btnPickFile').disabled=!connected; $('#btnExportNow').disabled=!connected; $('#btnClearLocal').disabled=!connected; $('#btnAutoSaveEnable').disabled=!connected; }
-
-  /*************** Serial state ***************/
-  let port, writer; let universalOK=false; let autoTimer=null; let modeTimer=null; let ioBusy=false;
-  async function writeChar(ch){ if(!writer) return; await writer.write(new Uint8Array([ch.charCodeAt(0)])); log("'"+ch+"'",'tx'); }
-  async function readLine({timeoutMs=2500, drainMs=100}={}){ if(!port) return ''; const reader=port.readable.getReader(); const td=new TextDecoder(); let text=''; let timer; try{ timer=setTimeout(()=>{ try{reader.cancel();}catch{} }, timeoutMs); while(true){ const {value,done}=await reader.read(); if(done) break; if(value){ text+=td.decode(value,{stream:true}); if(/\r|\n/.test(text)){ await sleep(drainMs); const tail=await reader.read(); if(tail && tail.value) text+=td.decode(tail.value,{stream:true}); break; } } } }catch(_){ } finally{ clearTimeout(timer); reader.releaseLock(); } const out=(text||'').trim(); if(out) log(JSON.stringify(out),'rx'); return out; }
-  async function readChar({timeoutMs=800}={}){ if(!port) return ''; const reader=port.readable.getReader(); const td=new TextDecoder(); let out=''; let timer; try{ timer=setTimeout(()=>{ try{reader.cancel();}catch{} }, timeoutMs); const {value}=await reader.read(); if(value) out=td.decode(value).trim(); }catch(_){ } finally{ clearTimeout(timer); reader.releaseLock(); } if(out) log(JSON.stringify(out),'rx'); return out; }
-
-  /*************** CSV export & auto‑save ***************/
-  let fileHandle=null, autosave=false, autosaveTimer=null; let sampleIndex=0; const buffer=[]; const pendingLines=[]; const channelOrder=[];
-  function _isDigits(str){ if(typeof str!=="string"||!str.length) return false; for(let i=0;i<str.length;i++){ const c=str.charCodeAt(i); if(c<48||c>57) return false; } return true; }
-  function isValidSizeLabel(sz){ if(typeof sz!=="string") return false; const parts=sz.split('.'); if(parts.length>2) return false; if(!_isDigits(parts[0])) return false; if(parts.length===2 && (!_isDigits(parts[1])||parts[1].length>2)) return false; const v=parseFloat(sz); return isFinite(v)&&v>0&&v<=1000; }
-  function sanitizeChannels(ch){ const out={}; if(!ch) return out; for(const k in ch){ if(!Object.prototype.hasOwnProperty.call(ch,k)) continue; const v=ch[k]; if(!isValidSizeLabel(k)) continue; const n=Number(v); if(!Number.isFinite(n)||n<0) continue; out[k]=Math.trunc(n); } return out; }
-  function fmtDate(s){ if(typeof s==='string'&&s.length===6&&_isDigits(s)){ const mm=s.slice(0,2), dd=s.slice(2,4), yy=s.slice(4,6); return dd+'/'+mm+'/'+yy; } return s||''; }
-  function fmtTime(s){ if(typeof s==='string'&&s.length===6&&_isDigits(s)){ const hh=s.slice(0,2), mi=s.slice(2,4), ss=s.slice(4,6); return hh+':'+mi+':'+ss; } return s||''; }
-  function headerRow(){ const base=['ISO_TS','SampleIndex','Date','Time','Period']; const chanCols=channelOrder.map(function(sz){return 'Ch '+sz;}); const tail=['Flow','Location','Checksum']; return base.concat(chanCols).concat(tail); }
-  function csvEscape(s){ if(s==null) return ''; const t=String(s); return /[",\n]/.test(t)? '"'+t.replace(/"/g,'""')+'"': t; }
-  function toCSV(rows){ return rows.map(function(r){return r.map(csvEscape).join(',');}).join('\n'); }
-  function setSaveHint(msg){ $('#saveHint').textContent=msg; }
-  async function pickFile(){ if(!window.showSaveFilePicker){ setSaveHint('File System Access API not supported'); return; } try{ fileHandle=await window.showSaveFilePicker({ suggestedName:'metone_records.csv', types:[{ description:'CSV', accept:{'text/csv':['.csv']} }] }); const w=await fileHandle.createWritable(); await w.write(toCSV([headerRow()])+'\n'); await w.close(); setSaveHint('Chosen: '+(fileHandle.name||'metone_records.csv')); }catch(e){ setSaveHint('No file chosen'); } }
-  async function flushAutosave(){ if(!autosave||!fileHandle||pendingLines.length===0) return; try{ const w=await fileHandle.createWritable({keepExistingData:true}); const f=await fileHandle.getFile(); await w.seek(f.size); await w.write(toCSV(pendingLines)+'\n'); await w.close(); pendingLines.length=0; }catch(e){ log('Auto‑save error: '+e); } }
-  function enableAutosave(){ if(!fileHandle){ setSaveHint('Pick a CSV file first'); return; } autosave=true; const sec=Math.max(1, parseInt($('#saveEvery').value||'10')); $('#btnAutoSaveEnable').disabled=true; $('#btnAutoSaveDisable').disabled=false; setSaveHint('Auto‑saving every '+sec+'s'); autosaveTimer=setInterval(flushAutosave, sec*1000); }
-  function disableAutosave(){ autosave=false; if(autosaveTimer) clearInterval(autosaveTimer); autosaveTimer=null; $('#btnAutoSaveEnable').disabled=false; $('#btnAutoSaveDisable').disabled=true; setSaveHint('Auto‑save stopped'); }
-  function downloadCSVNow(){ if(buffer.length===0){ log('No buffered records to export'); return; } const rows=[headerRow()].concat(buffer.map(recordToRow).filter(function(r){return Array.isArray(r);})); const csv=toCSV(rows); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); const ts=new Date().toISOString().replace(/[:T]/g,'-').slice(0,19); a.href=url; a.download='metone_3315_records_'+ts+'.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); log('CSV exported'); }
-  function clearLocal(){ buffer.length=0; sampleIndex=0; pendingLines.length=0; log('Cleared local buffer'); }
-
-  /*************** Tabs & Charts ***************/
-  $$('.tabs button').forEach(function(btn){ btn.addEventListener('click',function(){ $$('.tabs button').forEach(function(b){ b.classList.remove('active'); }); btn.classList.add('active'); $('#tab-raw').hidden=btn.dataset.tab!=='raw'; $('#tab-latest').hidden=btn.dataset.tab!=='latest'; $('#tab-graphs').hidden=btn.dataset.tab!=='graphs'; }); });
-  const labels=[]; const seriesMap=new Map(); const floData=[]; let paused=false;
-  const chartCounts=new Chart($('#chartCounts'),{ type:'line', data:{ labels:labels, datasets:[] }, options:{ responsive:true, animation:false, scales:{ y:{ beginAtZero:true } } } });
-  const chartFLO=new Chart($('#chartFLO'),{ type:'line', data:{ labels:labels, datasets:[{ label:'Flow', data:floData }] }, options:{ responsive:true, animation:false, scales:{ y:{ beginAtZero:true } } } });
-  $('#btnPause').onclick=function(){ paused=!paused; $('#btnPause').textContent=paused?'Resume':'Pause'; };
-  $('#chkAutoY').onchange=function(){ [chartCounts,chartFLO].forEach(function(c){ c.options.scales.y.beginAtZero=$('#chkAutoY').checked; c.update('none'); }); };
-  function ensureDataset(sizeLabel){ if(seriesMap.has(sizeLabel)) return; const arr=[]; seriesMap.set(sizeLabel,arr); chartCounts.data.datasets.push({ label:sizeLabel+' µm', data:arr }); }
-  function pushPoint(arr, val){ arr.push(Number(val||0)); if(arr.length>300) arr.shift(); if($('#chkRolling').checked){ const n=Math.min(5,arr.length); let sum=0; for(let i=arr.length-n;i<arr.length;i++){ sum+=arr[i]; } arr[arr.length-1]=sum/n; } }
-  function pushSeries(parsed){ const t=parsed.time || new Date().toLocaleTimeString(); labels.push(t); if(labels.length>300) labels.shift(); seriesMap.forEach(function(a){ pushPoint(a,0); }); Object.keys(parsed.channels||{}).forEach(function(sz){ ensureDataset(sz); const arr=seriesMap.get(sz); arr[arr.length-1]=Number(parsed.channels[sz]||0); if($('#chkRolling').checked){ const n=Math.min(5,arr.length); let sum=0; for(let i=arr.length-n;i<arr.length;i++){ sum+=arr[i]; } arr[arr.length-1]=sum/n; } }); pushPoint(floData, parsed.flow||0); if(!paused){ chartCounts.update('none'); chartFLO.update('none'); } }
-
-  /*************** Protocol ***************/
-  async function connect(){ try{ port=await navigator.serial.requestPort({}); await port.open({ baudRate:9600, dataBits:8, stopBits:1, parity:'none', bufferSize:8192 }); writer=port.writable.getWriter(); $('#portName').textContent='Serial Port'; log('Connected'); $('#btnDisconnect').disabled=false; $('#btnConnect').disabled=true; updateUi(); }catch(e){ log('Connect error: '+e); } }
-  async function disconnect(){ stopAuto(); stopModePolling(); try{ if(writer){ writer.releaseLock(); writer=null; } }catch(e){} try{ if(port){ await port.close(); port=null; } }catch(e){} universalOK=false; setMode('Idle'); $('#btnDisconnect').disabled=true; $('#btnConnect').disabled=false; updateUi(); log('Disconnected'); }
-  async function enterUniversal(){ if(!port) return; for(let i=0;i<10;i++){ await writeChar('U'); await sleep(200); const resp=await readChar({timeoutMs:600}); if((resp||'').toUpperCase().indexOf('U')!==-1){ log('Universal mode acknowledged'); universalOK=true; updateUi(); startModePolling(); return true; } log('No response, retrying…'); await sleep(800); } log('Universal mode failed'); return false; }
-  async function identify(){ if(!universalOK) return; await writeChar('T'); const s=await readLine({timeoutMs:1500}); if(s){ setModel(s.split(/\s+/)[0]); } }
-  function startAuto(){ if(!universalOK) return; stopAuto(); autoTimer=setInterval(requestRecord,1000); setMode('Counting'); }
-  function stopAuto(){ if(autoTimer) clearInterval(autoTimer); autoTimer=null; }
-  async function autoCommand(){ if(!universalOK) return; await writeChar('a'); await sleep(50); await writeChar('d'); startAuto(); }
-  async function standby(){ if(!universalOK) return; await writeChar('h'); setMode('Stopped'); stopAuto(); }
-  async function clearDeviceBuffer(){ if(!universalOK) return; await writeChar('C'); log('Requested device buffer clear (C).'); }
-  async function pollOnce(){ if(!universalOK) return; await requestRecord(); }
-
-  // Mode polling
-  async function pollMode(){ if(!universalOK || ioBusy) return; ioBusy=true; try{ await writeChar('M'); const r=await readChar({timeoutMs:300}); const c=(r||'').trim().toUpperCase(); if(c.indexOf('C')===0) setMode('Counting'); else if(c.indexOf('H')===0) setMode('Holding'); else if(c.indexOf('S')===0) setMode('Stopped'); }catch(e){} finally{ ioBusy=false; } }
-  function startModePolling(){ stopModePolling(); modeTimer=setInterval(pollMode,1500); }
-  function stopModePolling(){ if(modeTimer) clearInterval(modeTimer); modeTimer=null; }
-
-  /*************** Parsing & record loop (with DEBUG) ***************/
-  const TAGS=new Set(['A/V','FLO','LOC','C/S']);
-  
-  function looksLikeSize(tok){
-    // Channels always include a decimal; allow trailing dot (e.g., "10.")
-    return /^\d+\.\d*$/.test(tok);
-  }
-
-  function parseRecord(s){
-    console.log('parseRecord');
-    console.log('raw line:', s);
-    try{
-      let text=(s||'').trim();
-      // strip leading 'A' echo and optional backtick
-      text=text.replace(/^A[\s`]+/,'');
-      text=text.replace(/^\$\s*/, '');
-      // normalize whitespace
-      text=text.replace(/\s+/g,' ').trim();
-      let parts=text.split(' ');
-      // Remove tokens with '#' or non-digit characters if within first 2 tokens
-      parts = parts.filter((tok,idx)=>{
-        if(idx<2){
-          if(tok.includes('#')) return false;
-          if(/[^0-9]/.test(tok)) return false;
+      /*************** CSV export & auto‑save ***************/
+      let fileHandle = null,
+        autosave = false,
+        autosaveTimer = null;
+      let sampleIndex = 0;
+      const buffer = [];
+      const pendingLines = [];
+      const channelOrder = [];
+      function _isDigits(str) {
+        if (typeof str !== "string" || !str.length) return false;
+        for (let i = 0; i < str.length; i++) {
+          const c = str.charCodeAt(i);
+          if (c < 48 || c > 57) return false;
         }
         return true;
+      }
+      function isValidSizeLabel(sz) {
+        if (typeof sz !== "string") return false;
+        const parts = sz.split(".");
+        if (parts.length > 2) return false;
+        if (!_isDigits(parts[0])) return false;
+        if (parts.length === 2 && (!_isDigits(parts[1]) || parts[1].length > 2))
+          return false;
+        const v = parseFloat(sz);
+        return isFinite(v) && v > 0 && v <= 1000;
+      }
+      function sanitizeChannels(ch) {
+        const out = {};
+        if (!ch) return out;
+        for (const k in ch) {
+          if (!Object.prototype.hasOwnProperty.call(ch, k)) continue;
+          const v = ch[k];
+          if (!isValidSizeLabel(k)) continue;
+          const n = Number(v);
+          if (!Number.isFinite(n) || n < 0) continue;
+          out[k] = Math.trunc(n);
+        }
+        return out;
+      }
+      function fmtDate(s) {
+        if (typeof s === "string" && s.length === 6 && _isDigits(s)) {
+          const mm = s.slice(0, 2),
+            dd = s.slice(2, 4),
+            yy = s.slice(4, 6);
+          return dd + "/" + mm + "/" + yy;
+        }
+        return s || "";
+      }
+      function fmtTime(s) {
+        if (typeof s === "string" && s.length === 6 && _isDigits(s)) {
+          const hh = s.slice(0, 2),
+            mi = s.slice(2, 4),
+            ss = s.slice(4, 6);
+          return hh + ":" + mi + ":" + ss;
+        }
+        return s || "";
+      }
+      function headerRow() {
+        const base = ["ISO_TS", "SampleIndex", "Date", "Time", "Period"];
+        const chanCols = channelOrder.map(function (sz) {
+          return "Ch " + sz;
+        });
+        const tail = ["Flow", "Location", "Checksum"];
+        return base.concat(chanCols).concat(tail);
+      }
+      function csvEscape(s) {
+        if (s == null) return "";
+        const t = String(s);
+        return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+      }
+      function toCSV(rows) {
+        return rows
+          .map(function (r) {
+            return r.map(csvEscape).join(",");
+          })
+          .join("\n");
+      }
+      function setSaveHint(msg) {
+        $("#saveHint").textContent = msg;
+      }
+      async function pickFile() {
+        if (!window.showSaveFilePicker) {
+          setSaveHint("File System Access API not supported");
+          return;
+        }
+        try {
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: "metone_records.csv",
+            types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+          });
+          const w = await fileHandle.createWritable();
+          await w.write(toCSV([headerRow()]) + "\n");
+          await w.close();
+          setSaveHint("Chosen: " + (fileHandle.name || "metone_records.csv"));
+        } catch (e) {
+          setSaveHint("No file chosen");
+        }
+      }
+      async function flushAutosave() {
+        if (!autosave || !fileHandle || pendingLines.length === 0) return;
+        try {
+          const w = await fileHandle.createWritable({ keepExistingData: true });
+          const f = await fileHandle.getFile();
+          await w.seek(f.size);
+          await w.write(toCSV(pendingLines) + "\n");
+          await w.close();
+          pendingLines.length = 0;
+        } catch (e) {
+          log("Auto‑save error: " + e);
+        }
+      }
+      function enableAutosave() {
+        if (!fileHandle) {
+          setSaveHint("Pick a CSV file first");
+          return;
+        }
+        autosave = true;
+        const sec = Math.max(1, parseInt($("#saveEvery").value || "10"));
+        $("#btnAutoSaveEnable").disabled = true;
+        $("#btnAutoSaveDisable").disabled = false;
+        setSaveHint("Auto‑saving every " + sec + "s");
+        autosaveTimer = setInterval(flushAutosave, sec * 1000);
+      }
+      function disableAutosave() {
+        autosave = false;
+        if (autosaveTimer) clearInterval(autosaveTimer);
+        autosaveTimer = null;
+        $("#btnAutoSaveEnable").disabled = false;
+        $("#btnAutoSaveDisable").disabled = true;
+        setSaveHint("Auto‑save stopped");
+      }
+      function downloadCSVNow() {
+        if (buffer.length === 0) {
+          log("No buffered records to export");
+          return;
+        }
+        const rows = [headerRow()].concat(
+          buffer.map(recordToRow).filter(function (r) {
+            return Array.isArray(r);
+          })
+        );
+        const csv = toCSV(rows);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const ts = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 19);
+        a.href = url;
+        a.download = "metone_3315_records_" + ts + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        log("CSV exported");
+      }
+      function clearLocal() {
+        buffer.length = 0;
+        sampleIndex = 0;
+        pendingLines.length = 0;
+        log("Cleared local buffer");
+      }
+
+      /*************** Tabs & Charts ***************/
+      $$(".tabs button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          $$(".tabs button").forEach(function (b) {
+            b.classList.remove("active");
+          });
+          btn.classList.add("active");
+          $("#tab-raw").hidden = btn.dataset.tab !== "raw";
+          $("#tab-latest").hidden = btn.dataset.tab !== "latest";
+          $("#tab-graphs").hidden = btn.dataset.tab !== "graphs";
+        });
       });
-      console.log('tokens:', parts);
-      if(parts.length<3) { 
-        console.log('too few tokens');  
-        return null; 
+      const labels = [];
+      const seriesMap = new Map();
+      const floData = [];
+      let paused = false;
+      const chartCounts = new Chart($("#chartCounts"), {
+        type: "line",
+        data: { labels: labels, datasets: [] },
+        options: {
+          responsive: true,
+          animation: false,
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+      const chartFLO = new Chart($("#chartFLO"), {
+        type: "line",
+        data: { labels: labels, datasets: [{ label: "Flow", data: floData }] },
+        options: {
+          responsive: true,
+          animation: false,
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+      $("#btnPause").onclick = function () {
+        paused = !paused;
+        $("#btnPause").textContent = paused ? "Resume" : "Pause";
+      };
+      $("#chkAutoY").onchange = function () {
+        [chartCounts, chartFLO].forEach(function (c) {
+          c.options.scales.y.beginAtZero = $("#chkAutoY").checked;
+          c.update("none");
+        });
+      };
+      function ensureDataset(sizeLabel) {
+        if (seriesMap.has(sizeLabel)) return;
+        const arr = [];
+        seriesMap.set(sizeLabel, arr);
+        chartCounts.data.datasets.push({ label: sizeLabel + " µm", data: arr });
       }
-      const out={ date:parts[0], time:parts[1], period:parts[2], channels:{}, air_velocity:null, flow:null, location:null, checksum:null, raw:text };
-      let i=3;
-      // channel pairs until a TAG
-      while(i+1<parts.length){
-        const tok=parts[i];
-        if(TAGS.has(tok)) break;
-        if(!looksLikeSize(tok)) { console.log('stop channels at token', tok); break; }
-        const size=tok.replace(/\.$/,'');
-        const cntTok=parts[i+1];
-        const cnt=parseInt((cntTok||'').replace(/[^0-9]/g,''));
-        console.log('channel pair candidate:', {size:size, cntTok:cntTok, cnt:cnt});
-        if(Number.isFinite(cnt)) out.channels[size]=cnt; else console.warn('bad count token, skipping', cntTok);
-        i+=2;
+      function pushPoint(arr, val) {
+        arr.push(Number(val || 0));
+        if (arr.length > 300) arr.shift();
+        if ($("#chkRolling").checked) {
+          const n = Math.min(5, arr.length);
+          let sum = 0;
+          for (let i = arr.length - n; i < arr.length; i++) {
+            sum += arr[i];
+          }
+          arr[arr.length - 1] = sum / n;
+        }
       }
-      // tagged tail
-      while(i+1<parts.length){
-        const tag=parts[i]; const val=parts[i+1];
-        console.log('tag pair:', tag, val);
-        if(tag==='A/V') out.air_velocity=parseInt(val)||0;
-        else if(tag==='FLO') out.flow=parseInt(val)||0;
-        else if(tag==='LOC') out.location=parseInt(val)||0;
-        else if(tag==='C/S') out.checksum=val;
-        i+=2;
+      function pushSeries(parsed) {
+        const t = parsed.time || new Date().toLocaleTimeString();
+        labels.push(t);
+        if (labels.length > 300) labels.shift();
+        seriesMap.forEach(function (a) {
+          pushPoint(a, 0);
+        });
+        Object.keys(parsed.channels || {}).forEach(function (sz) {
+          ensureDataset(sz);
+          const arr = seriesMap.get(sz);
+          arr[arr.length - 1] = Number(parsed.channels[sz] || 0);
+          if ($("#chkRolling").checked) {
+            const n = Math.min(5, arr.length);
+            let sum = 0;
+            for (let i = arr.length - n; i < arr.length; i++) {
+              sum += arr[i];
+            }
+            arr[arr.length - 1] = sum / n;
+          }
+        });
+        pushPoint(floData, parsed.flow || 0);
+        if (!paused) {
+          chartCounts.update("none");
+          chartFLO.update("none");
+        }
       }
-      console.log('parsed object:', out);
-      return out;
-    }catch(e){ console.log('parse error:', e); log('Parse error: '+e); return null; }
-  }
 
-  function renderLatest(p){ $('#kvDate').textContent=fmtDate(p.date); $('#kvTime').textContent=fmtTime(p.time); $('#kvPeriod').textContent=p.period||'—'; $('#kvLoc').textContent=(p.location!=null?p.location:'—'); $('#kvFLO').textContent=(p.flow!=null?p.flow:'—'); $('#kvCS').textContent=(p.checksum!=null?p.checksum:'—'); const host=$('#latestChannels'); host.innerHTML=''; Object.keys(p.channels||{}).forEach(function(sz){ const div=document.createElement('div'); div.className='kv'; div.innerHTML='<b>'+sz+' µm</b><span>'+p.channels[sz]+'</span>'; host.appendChild(div); }); }
+      /*************** Protocol ***************/
+      async function connect() {
+        try {
+          port = await navigator.serial.requestPort({});
+          await port.open({
+            baudRate: 9600,
+            dataBits: 8,
+            stopBits: 1,
+            parity: "none",
+            bufferSize: 8192,
+          });
+          writer = port.writable.getWriter();
+          $("#portName").textContent = "Serial Port";
+          log("Connected");
+          $("#btnDisconnect").disabled = false;
+          $("#btnConnect").disabled = true;
+          updateUi();
+        } catch (e) {
+          log("Connect error: " + e);
+        }
+      }
+      async function disconnect() {
+        stopAuto();
+        stopModePolling();
+        try {
+          if (writer) {
+            writer.releaseLock();
+            writer = null;
+          }
+        } catch (e) {}
+        try {
+          if (port) {
+            await port.close();
+            port = null;
+          }
+        } catch (e) {}
+        universalOK = false;
+        setMode("Idle");
+        $("#btnDisconnect").disabled = true;
+        $("#btnConnect").disabled = false;
+        updateUi();
+        log("Disconnected");
+      }
+      async function enterUniversal() {
+        if (!port) return;
+        for (let i = 0; i < 10; i++) {
+          await writeChar("U");
+          await sleep(200);
+          const resp = await readChar({ timeoutMs: 600 });
+          if ((resp || "").toUpperCase().indexOf("U") !== -1) {
+            log("Universal mode acknowledged");
+            universalOK = true;
+            updateUi();
+            startModePolling();
+            return true;
+          }
+          log("No response, retrying…");
+          await sleep(800);
+        }
+        log("Universal mode failed");
+        return false;
+      }
+      async function identify() {
+        if (!universalOK) return;
+        await writeChar("T");
+        const s = await readLine({ timeoutMs: 1500 });
+        if (s) {
+          setModel(s.split(/\s+/)[0]);
+        }
+      }
+      function startAuto() {
+        if (!universalOK) return;
+        stopAuto();
+        autoTimer = setInterval(requestRecord, 1000);
+        setMode("Counting");
+      }
+      function stopAuto() {
+        if (autoTimer) clearInterval(autoTimer);
+        autoTimer = null;
+      }
+      async function autoCommand() {
+        if (!universalOK) return;
+        await writeChar("a");
+        await sleep(50);
+        await writeChar("d");
+        startAuto();
+      }
+      async function standby() {
+        if (!universalOK) return;
+        await writeChar("h");
+        setMode("Stopped");
+        stopAuto();
+      }
+      async function clearDeviceBuffer() {
+        if (!universalOK) return;
+        await writeChar("C");
+        log("Requested device buffer clear (C).");
+      }
+      async function pollOnce() {
+        if (!universalOK) return;
+        await requestRecord();
+      }
 
-  function recordToRow(r){
-    console.group('recordToRow');
-    console.debug('raw record obj:', r);
-    const cleanChannels=sanitizeChannels(r.channels);
-    console.debug('sanitized channels:', cleanChannels);
-    Object.keys(cleanChannels).forEach(function(sz){ if(channelOrder.indexOf(sz)===-1) channelOrder.push(sz); });
-    const dateOk=!r.date || (typeof r.date==='string'&&r.date.length===6&&_isDigits(r.date));
-    const timeOk=!r.time || (typeof r.time==='string'&&r.time.length===6&&_isDigits(r.time));
-    const hasAnyChannel=Object.keys(cleanChannels).length>0;
-    if(!hasAnyChannel && !(dateOk&&timeOk)){ console.warn('drop row – no valid channels & bad date/time', r); console.groupEnd(); return null; }
-    const iso=new Date().toISOString();
-    const row=[ iso, sampleIndex, fmtDate(r.date), fmtTime(r.time), (r.period||'') ];
-    channelOrder.forEach(function(sz){ row.push(cleanChannels.hasOwnProperty(sz)?cleanChannels[sz]:''); });
-    row.push((r.flow!=null?r.flow:''),(r.location!=null?r.location:''),(r.checksum!=null?r.checksum:''));
-    console.debug('final csv row:', row);
-    console.groupEnd();
-    return row;
-  }
+      // Mode polling
+      async function pollMode() {
+        if (!universalOK || ioBusy) return;
+        ioBusy = true;
+        try {
+          await writeChar("M");
+          const r = await readChar({ timeoutMs: 300 });
+          const c = (r || "").trim().toUpperCase();
+          if (c.indexOf("C") === 0) setMode("Counting");
+          else if (c.indexOf("H") === 0) setMode("Holding");
+          else if (c.indexOf("S") === 0) setMode("Stopped");
+        } catch (e) {
+        } finally {
+          ioBusy = false;
+        }
+      }
+      function startModePolling() {
+        stopModePolling();
+        modeTimer = setInterval(pollMode, 1500);
+      }
+      function stopModePolling() {
+        if (modeTimer) clearInterval(modeTimer);
+        modeTimer = null;
+      }
 
-  async function requestRecord(){ if(ioBusy) return; ioBusy=true; try{ await writeChar('A'); const line=await readLine({timeoutMs:2500, drainMs:100}); if(!line) return; const t=line.trim(); if(/^A#/.test(t)) return; let rec=t; rec=rec.replace(/^A[\s`]*/, ''); rec=rec.replace(/^\$\s*/, ''); log('Record: '+rec); const parsed=parseRecord(rec); if(!parsed){ log('Record parse failed'); return; } renderLatest(parsed); pushSeries(parsed); const row=recordToRow({ index: sampleIndex, date: parsed.date, time: parsed.time, period: parsed.period, channels: parsed.channels, flow: parsed.flow, location: parsed.location, checksum: parsed.checksum }); if(Array.isArray(row)){ sampleIndex++; buffer.push(parsed); pendingLines.push(row); } } finally { ioBusy=false; } }
+      /*************** Parsing & record loop (with DEBUG) ***************/
+      const TAGS = new Set(["A/V", "FLO", "LOC", "C/S"]);
 
-  /*************** Wire UI ***************/
-  $('#btnConnect').onclick=connect; $('#btnDisconnect').onclick=disconnect; $('#btnEnterUniversal').onclick=enterUniversal; $('#btnIdentify').onclick=identify; $('#btnAuto').onclick=autoCommand; $('#btnPollOnce').onclick=pollOnce; $('#btnStandby').onclick=standby; $('#btnClearDevice').onclick=clearDeviceBuffer; $('#btnPickFile').onclick=pickFile; $('#btnAutoSaveEnable').onclick=enableAutosave; $('#btnAutoSaveDisable').onclick=disableAutosave; $('#btnExportNow').onclick=downloadCSVNow; $('#btnClearLocal').onclick=clearLocal;
+      // Reorder global CSV/Latest channel columns to match the most recent record,
+      // while keeping previously-seen-but-missing-this-time sizes at the end.
+      function updateChannelOrderFromRecord(order) {
+        if (!Array.isArray(order) || order.length === 0) return;
+        const seen = new Set(order);
+        const remainder = channelOrder.filter((sz) => !seen.has(sz));
+        channelOrder.length = 0;
+        order.forEach((sz) => {
+          if (!channelOrder.includes(sz)) channelOrder.push(sz);
+        });
+        remainder.forEach((sz) => channelOrder.push(sz));
+      }
 
-  // Capability check
-  if(!('serial' in navigator)){ log('WebSerial not supported in this browser. Use a recent Chrome/Edge.'); $('#btnConnect').disabled=true; }
-  </script>
-</body>
+      function looksLikeSize(tok) {
+        // Channels always include a decimal; allow trailing dot (e.g., "10.")
+        return /^\d+\.\d*$/.test(tok);
+      }
+
+      function parseRecord(s) {
+        console.log("parseRecord");
+        console.log("raw line:", s);
+        try {
+          let text = (s || "").trim();
+          text = text.replace(/^A[\s`]+/, "");
+          text = text.replace(/^\$\s*/, "");
+          text = text.replace(/\s+/g, " ").trim();
+
+          let parts = text.split(" ");
+          // Remove tokens with '#' or non-digit chars if in first 2 tokens
+          parts = parts.filter((tok, idx) => {
+            if (idx < 2) {
+              if (tok.includes("#")) return false;
+              if (/[^0-9]/.test(tok)) return false;
+            }
+            return true;
+          });
+          console.log("tokens:", parts);
+          if (parts.length < 3) {
+            console.log("too few tokens");
+            return null;
+          }
+
+          const out = {
+            date: parts[0],
+            time: parts[1],
+            period: parts[2],
+            channels: {},
+            air_velocity: null,
+            flow: null,
+            location: null,
+            checksum: null,
+            raw: text,
+            channelOrder: [], // ← NEW: preserve encounter order
+          };
+
+          let i = 3;
+          while (i + 1 < parts.length) {
+            const tok = parts[i];
+            if (TAGS.has(tok)) break;
+            if (!looksLikeSize(tok)) {
+              console.log("stop channels at token", tok);
+              break;
+            }
+
+            const size = tok.replace(/\.$/, ""); // allow "10." -> "10"
+            const cntTok = parts[i + 1];
+            const cnt = parseInt((cntTok || "").replace(/[^0-9]/g, ""));
+
+            console.log("channel pair candidate:", { size, cntTok, cnt });
+            if (Number.isFinite(cnt)) {
+              out.channels[size] = cnt;
+              out.channelOrder.push(size); // ← NEW: remember order
+            } else {
+              console.warn("bad count token, skipping", cntTok);
+            }
+            i += 2;
+          }
+
+          while (i + 1 < parts.length) {
+            const tag = parts[i],
+              val = parts[i + 1];
+            console.log("tag pair:", tag, val);
+            if (tag === "A/V") out.air_velocity = parseInt(val) || 0;
+            else if (tag === "FLO") out.flow = parseInt(val) || 0;
+            else if (tag === "LOC") out.location = parseInt(val) || 0;
+            else if (tag === "C/S") out.checksum = val;
+            i += 2;
+          }
+
+          console.log("parsed object:", out);
+          return out;
+        } catch (e) {
+          console.log("parse error:", e);
+          log("Parse error: " + e);
+          return null;
+        }
+      }
+
+      function renderLatest(p) {
+        $("#kvDate").textContent = fmtDate(p.date);
+        $("#kvTime").textContent = fmtTime(p.time);
+        $("#kvPeriod").textContent = p.period || "—";
+        $("#kvLoc").textContent = p.location != null ? p.location : "—";
+        $("#kvFLO").textContent = p.flow != null ? p.flow : "—";
+        $("#kvCS").textContent = p.checksum != null ? p.checksum : "—";
+
+        const host = $("#latestChannels");
+        host.innerHTML = "";
+        const order =
+          Array.isArray(p.channelOrder) && p.channelOrder.length
+            ? p.channelOrder
+            : Object.keys(p.channels || {});
+        order.forEach((sz) => {
+          const div = document.createElement("div");
+          div.className = "kv";
+          div.innerHTML = `<b>${sz} µm</b><span>${p.channels[sz]}</span>`;
+          host.appendChild(div);
+        });
+      }
+
+      function recordToRow(r) {
+        console.group("recordToRow");
+        console.debug("raw record obj:", r);
+        const cleanChannels = sanitizeChannels(r.channels);
+        console.debug("sanitized channels:", cleanChannels);
+
+        const order =
+          Array.isArray(r.channelOrder) && r.channelOrder.length
+            ? r.channelOrder
+            : Object.keys(cleanChannels);
+        updateChannelOrderFromRecord(order);
+
+        const dateOk =
+          !r.date ||
+          (typeof r.date === "string" &&
+            r.date.length === 6 &&
+            _isDigits(r.date));
+        const timeOk =
+          !r.time ||
+          (typeof r.time === "string" &&
+            r.time.length === 6 &&
+            _isDigits(r.time));
+        const hasAnyChannel = Object.keys(cleanChannels).length > 0;
+        if (!hasAnyChannel && !(dateOk && timeOk)) {
+          console.warn("drop row – no valid channels & bad date/time", r);
+          console.groupEnd();
+          return null;
+        }
+
+        const iso = new Date().toISOString();
+        const row = [
+          iso,
+          sampleIndex,
+          fmtDate(r.date),
+          fmtTime(r.time),
+          r.period || "",
+        ];
+        channelOrder.forEach((sz) =>
+          row.push(
+            Object.prototype.hasOwnProperty.call(cleanChannels, sz)
+              ? cleanChannels[sz]
+              : ""
+          )
+        );
+        row.push(
+          r.flow != null ? r.flow : "",
+          r.location != null ? r.location : "",
+          r.checksum != null ? r.checksum : ""
+        );
+        console.debug("final csv row:", row);
+        console.groupEnd();
+        return row;
+      }
+
+      async function requestRecord() {
+        if (ioBusy) return;
+        ioBusy = true;
+        try {
+          await writeChar("A");
+          const line = await readLine({ timeoutMs: 2500, drainMs: 100 });
+          if (!line) return;
+          const t = line.trim();
+          if (/^A#/.test(t)) return;
+          let rec = t;
+          rec = rec.replace(/^A[\s`]*/, "");
+          rec = rec.replace(/^\$\s*/, "");
+          log("Record: " + rec);
+          const parsed = parseRecord(rec);
+          if (!parsed) {
+            log("Record parse failed");
+            return;
+          }
+          renderLatest(parsed);
+          pushSeries(parsed);
+          const row = recordToRow({
+            index: sampleIndex,
+            date: parsed.date,
+            time: parsed.time,
+            period: parsed.period,
+            channels: parsed.channels,
+            channelOrder: parsed.channelOrder, // ← NEW
+            flow: parsed.flow,
+            location: parsed.location,
+            checksum: parsed.checksum,
+          });
+          if (Array.isArray(row)) {
+            sampleIndex++;
+            buffer.push(parsed);
+            pendingLines.push(row);
+          }
+        } finally {
+          ioBusy = false;
+        }
+      }
+
+      /*************** Wire UI ***************/
+      $("#btnConnect").onclick = connect;
+      $("#btnDisconnect").onclick = disconnect;
+      $("#btnEnterUniversal").onclick = enterUniversal;
+      $("#btnIdentify").onclick = identify;
+      $("#btnAuto").onclick = autoCommand;
+      $("#btnPollOnce").onclick = pollOnce;
+      $("#btnStandby").onclick = standby;
+      $("#btnClearDevice").onclick = clearDeviceBuffer;
+      $("#btnPickFile").onclick = pickFile;
+      $("#btnAutoSaveEnable").onclick = enableAutosave;
+      $("#btnAutoSaveDisable").onclick = disableAutosave;
+      $("#btnExportNow").onclick = downloadCSVNow;
+      $("#btnClearLocal").onclick = clearLocal;
+
+      // Capability check
+      if (!("serial" in navigator)) {
+        log(
+          "WebSerial not supported in this browser. Use a recent Chrome/Edge."
+        );
+        $("#btnConnect").disabled = true;
+      }
+    </script>
+  </body>
 </html>
-
