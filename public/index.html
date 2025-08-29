@@ -1,384 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Met One 3315 WebSerial Tester</title>
+  <title>Met One 3315 – WebSerial Interface</title>
   <style>
-    :root {
-      --bg: #0f172a; /* slate-900 */
-      --panel: #111827; /* gray-900 */
-      --muted: #94a3b8; /* slate-400 */
-      --text: #e5e7eb; /* gray-200 */
-      --accent: #22d3ee; /* cyan-400 */
-      --ok: #34d399; /* green-400 */
-      --warn: #fbbf24; /* amber-400 */
-      --err: #f87171; /* red-400 */
-      --btn: #1f2937; /* gray-800 */
-    }
-    html, body { height: 100%; }
-    body {
-      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: linear-gradient(180deg, var(--bg), #0b1022 60%); color: var(--text);
-    }
-    header {
-      padding: 16px 20px; border-bottom: 1px solid #1f2937; position: sticky; top: 0; backdrop-filter: blur(4px);
-    }
-    h1 { margin: 0; font-size: 18px; letter-spacing: .4px; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 18px; }
-    .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
-    .card { background: var(--panel); border: 1px solid #1f2937; border-radius: 14px; padding: 14px; }
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    label { font-size: 12px; color: var(--muted); }
-    select, input[type="text"], button { background: var(--btn); color: var(--text); border: 1px solid #334155; border-radius: 10px; padding: 8px 10px; font-size: 14px; }
-    select, input { min-width: 80px; }
-    button { cursor: pointer; }
-    button.primary { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(34,211,238,.3) inset; }
-    button.success { border-color: var(--ok); }
-    button.warn { border-color: var(--warn); }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-    .pill { padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #334155; color: var(--muted); }
-    .status { font-variant-numeric: tabular-nums; }
-    .log {
-      background: #0b1226; border: 1px solid #0f1b38; height: 420px; overflow: auto; border-radius: 10px; padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px;
-      white-space: pre-wrap; word-wrap: break-word;
-    }
-    .kbd { background: #0a0f1e; border: 1px solid #1f2937; border-bottom-color: #0ea5b7; border-radius: 6px; padding: 2px 6px; font-family: ui-monospace; font-size: 12px; }
-    .footer { color: var(--muted); font-size: 12px; text-align: center; padding: 10px; }
+    :root{--bg:#0b1020;--card:#121a33;--muted:#9fb0d0;--fg:#e7efff;--acc:#66d0ff;--ok:#32d296;--warn:#ffdd57;--bad:#ff6b6b;--btn:#1b2547}
+    *{box-sizing:border-box}
+    body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:14px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    h1{margin:0 0 16px 0;font-size:20px}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);flex:1}
+    .kv{background:#0e1630;padding:8px 10px;border-radius:10px}
+    .kv b{display:block;font-size:12px;color:var(--muted)}
+    .kv span{font-size:14px}
+    button{background:var(--btn);color:var(--fg);border:1px solid #273160;border-radius:10px;padding:10px 14px;cursor:pointer}
+    button.primary{background:var(--acc);color:#06121e;border-color:transparent;font-weight:700}
+    button.ghost{background:transparent}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    #terminal{height:260px;overflow:auto;background:#0a1127;border-radius:10px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre-wrap}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#0e1630;border:1px solid #21305d}
+    .status-dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
+    .status-dot.run{background:var(--ok)}
+    .status-dot.stop{background:var(--bad)}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .field{display:flex;gap:6px;align-items:center}
+    input[type=number]{width:80px;background:#0e1630;border:1px solid #21305d;border-radius:8px;color:var(--fg);padding:6px 8px}
+    .hint{color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Met One 3315 WebSerial Tester <span class="pill status" id="status">DISCONNECTED</span></h1>
-  </header>
+  <h1>Met One 3315 – WebSerial Interface <span class="pill"><i class="status-dot" id="modeDot"></i><span id="modeText">DISCONNECTED</span></span></h1>
 
-  <div class="container">
-    <!-- Connection & Port Settings -->
-    <div class="card">
-      <div class="row" style="justify-content: space-between; align-items: flex-end;">
-        <div class="row">
-          <div>
-            <label>Baud</label><br/>
-            <select id="baud">
-              <option>2400</option>
-              <option>4800</option>
-              <option selected>9600</option>
-              <option>19200</option>
-              <option>38400</option>
-            </select>
-          </div>
-          <div>
-            <label>Data Bits</label><br/>
-            <select id="dataBits">
-              <option>7</option>
-              <option selected>8</option>
-            </select>
-          </div>
-          <div>
-            <label>Parity</label><br/>
-            <select id="parity">
-              <option>none</option>
-              <option selected>even</option>
-              <option>odd</option>
-            </select>
-          </div>
-          <div>
-            <label>Stop Bits</label><br/>
-            <select id="stopBits">
-              <option selected>1</option>
-              <option>2</option>
-            </select>
-          </div>
-          <div>
-            <label>Terminator</label><br/>
-            <select id="terminator">
-              <option value="\r" selected>CR (\r)</option>
-              <option value="\r\n">CRLF (\r\n)</option>
-              <option value="\n">LF (\n)</option>
-            </select>
-          </div>
-        </div>
-        <div class="row">
-          <button id="btnConnect" class="primary">Connect</button>
-          <button id="btnDisconnect" disabled>Disconnect</button>
-        </div>
+  <div class="row wrap">
+    <div class="card" style="max-width:560px">
+      <div class="row" style="gap:12px">
+        <div class="kv"><b>Port</b><span id="portName">—</span></div>
+        <div class="kv"><b>Model</b><span id="model">—</span></div>
+        <div class="kv"><b>Mode</b><span id="mode">Idle</span></div>
       </div>
-      <div style="margin-top:10px; color: var(--muted); font-size: 13px;">
-        Tip: Met One family often uses <span class="kbd">9600</span>/<span class="kbd">7-E-1</span>. If you see gibberish, try <span class="kbd">8-N-1</span>.
+      <div class="controls">
+        <button id="btnConnect" class="primary">Connect</button>
+        <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
+      </div>
+      <div class="controls" style="border-top:1px solid #223055;padding-top:10px">
+        <button id="btnEnterUniversal">Enter Universal ('U' until echo)</button>
+        <button id="btnIdentify" disabled>Identify ('T')</button>
+        <button id="btnAuto" disabled>Auto Start ('a'+'d')</button>
+        <button id="btnPollOnce" disabled>Poll Record Once ('A')</button>
+        <button id="btnStandby" class="ghost" disabled>Standby ('h')</button>
+        <button id="btnClearDevice" class="ghost" disabled>Clear buffer ('C')</button>
+        <span class="hint">No automatic actions after connect. Idle until you choose a command.</span>
       </div>
     </div>
 
-    <div class="grid" style="margin-top: 12px;">
-      <!-- Quick Commands -->
-      <div class="card">
-        <div class="row" style="justify-content: space-between; align-items: center;">
-          <div>
-            <strong>Quick Commands</strong>
-            <div style="color: var(--muted); font-size: 12px;">Commands are ASCII; the chosen terminator is appended automatically.</div>
-          </div>
-          <div class="row">
-            <button class="success" data-cmd="V">Version (V)</button>
-            <button class="success" data-cmd="S">Status (S)</button>
-            <button class="success" data-cmd="U">Single Read (U)</button>
-            <button class="warn" data-cmd="C">Continuous (C)</button>
-            <button data-cmd="H">Halt (H)</button>
-          </div>
-        </div>
-        <div class="row" style="margin-top: 10px; gap: 6px;">
-          <input id="customCmd" type="text" placeholder="Custom command (e.g., U)" style="flex:1; min-width: 200px;" />
-          <button id="btnSend">Send</button>
-          <button id="btnClear">Clear Log</button>
-          <button id="btnSave">Save Log</button>
-        </div>
-      </div>
-
-      <!-- Connection Info -->
-      <div class="card">
-        <strong>Connection Info</strong>
-        <div id="info" style="margin-top:6px; color: var(--muted); font-size: 13px;">
-          Navigator Serial Supported: <span id="support">checking…</span><br/>
-          Port: <span id="portName">—</span><br/>
-          Decoder: Text, UTF-8; line-splitting by CR/LF/CRLF
-        </div>
-      </div>
+    <div class="card" style="min-width:320px;max-width:640px">
+      <div id="terminal"></div>
     </div>
-
-    <!-- Log -->
-    <div class="card" style="margin-top:12px;">
-      <div class="row" style="justify-content: space-between; align-items: center;">
-        <strong>Log</strong>
-        <div>
-          <label style="margin-right:6px;"><input type="checkbox" id="showHex"> Show RX as hex</label>
-          <label><input type="checkbox" id="echoTx" checked> Echo TX</label>
-        </div>
-      </div>
-      <div id="log" class="log" aria-live="polite"></div>
-    </div>
-
-    <div class="footer">Built for field debugging. Works in Chromium browsers (Chrome/Edge) over HTTPS or localhost.</div>
   </div>
 
   <script>
-    // --- Utility: timestamped logging ---
-    const logEl = document.getElementById('log');
-    function ts() {
-      const d = new Date();
-      return d.toLocaleTimeString([], {hour12:false}) + '.' + String(d.getMilliseconds()).padStart(3,'0');
-    }
-    function logLine(text, cls='') {
-      const div = document.createElement('div');
-      if (cls) div.style.color = cls;
-      div.textContent = text;
-      logEl.appendChild(div);
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-    function logSys(msg) { logLine(`[${ts()}] ${msg}`, '#94a3b8'); }
-    function logTx(msg)  { logLine(`[${ts()}] → ${msg}`, '#22d3ee'); }
-    function logRx(msg)  { logLine(`[${ts()}] ← ${msg}`, '#e5e7eb'); }
-    function logErr(msg) { logLine(`[${ts()}] ! ${msg}`, '#f87171'); }
+  const $ = (s)=>document.querySelector(s);
+  const logEl = $('#terminal');
+  function log(msg, dir='sys'){ const ts = new Date().toLocaleTimeString(); const line = `[${ts}] ${dir==='tx'?'→':dir==='rx'?'←':'*'} ${msg}`; logEl.textContent += line+"\n"; logEl.scrollTop = logEl.scrollHeight; }
+  function setMode(m){ $('#mode').textContent=m; $('#modeText').textContent=m; const d=$('#modeDot'); d.className='status-dot'; if(m==='Counting') d.classList.add('run'); if(m==='Stopped') d.classList.add('stop'); }
+  function setModel(s){ $('#model').textContent=s||'—'; }
+  const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
-    // --- DOM refs ---
-    const btnConnect = document.getElementById('btnConnect');
-    const btnDisconnect = document.getElementById('btnDisconnect');
-    const statusEl = document.getElementById('status');
-    const supportEl = document.getElementById('support');
-    const portNameEl = document.getElementById('portName');
-    const terminatorEl = document.getElementById('terminator');
-    const showHexEl = document.getElementById('showHex');
-    const echoTxEl  = document.getElementById('echoTx');
+  // --- Serial state ---
+  let port, writer;
+  let autoTimer=null;
+  let universalOK=false;
 
-    const baudEl = document.getElementById('baud');
-    const dataBitsEl = document.getElementById('dataBits');
-    const parityEl = document.getElementById('parity');
-    const stopBitsEl = document.getElementById('stopBits');
-
-    const customCmdEl = document.getElementById('customCmd');
-    const btnSend = document.getElementById('btnSend');
-    const btnClear = document.getElementById('btnClear');
-    const btnSave = document.getElementById('btnSave');
-
-    // Quick command buttons
-    document.querySelectorAll('button[data-cmd]').forEach(b => b.addEventListener('click', () => sendCmd(b.dataset.cmd)));
-
-    // Feature detection
-    supportEl.textContent = ('serial' in navigator) ? 'Yes' : 'No';
-    if (!('serial' in navigator)) {
-      logErr('This browser does not support the Web Serial API. Use Chrome or Edge over HTTPS.');
-      btnConnect.disabled = true;
-    }
-
-    // --- Serial state ---
-    let port = null;
-    let reader = null;
-    let writer = null;
-    let readLoopAbort = null;
-
-    // Line splitter: handles CR, LF, CRLF
-    class LineBreakTransformer {
-      constructor() { this.container = ''; }
-      transform(chunk, controller) {
-        this.container += chunk;
-        const lines = this.container.split(/\r\n|\n|\r/);
-        this.container = lines.pop();
-        for (const line of lines) controller.enqueue(line);
-      }
-      flush(controller) {
-        if (this.container) controller.enqueue(this.container);
-      }
-    }
-
-    async function connect() {
-      try {
-        // Prompt user to select a port
-        port = await navigator.serial.requestPort();
-
-        // Build serial options from UI (Met One often 9600/7E1)
-        const opts = {
-          baudRate: Number(baudEl.value),
-          dataBits: Number(dataBitsEl.value),
-          stopBits: Number(stopBitsEl.value),
-          parity: parityEl.value,
-          flowControl: 'none'
-        };
-
-        await port.open(opts);
-
-        const info = port.getInfo();
-        portNameEl.textContent = `USB Vendor ${info.usbVendorId || '—'} / Product ${info.usbProductId || '—'}`;
-
-        // Set up reader pipeline
-        const textDecoder = new TextDecoderStream();
-        readLoopAbort = new AbortController();
-        const signal = readLoopAbort.signal;
-        port.readable
-          .pipeTo(textDecoder.writable, { signal })
-          .catch(e => {/* swallow during abort */});
-
-        const lineStream = textDecoder.readable
-          .pipeThrough(new TransformStream(new LineBreakTransformer()));
-        reader = lineStream.getReader();
-
-        // Set up writer
-        const textEncoder = new TextEncoder();
-        writer = port.writable.getWriter();
-
-        // UI state
-        btnConnect.disabled = true;
-        btnDisconnect.disabled = false;
-        statusEl.textContent = 'CONNECTED';
-        statusEl.style.borderColor = 'var(--ok)';
-        logSys('Port opened.');
-
-        // Start read loop
-        (async function readLoop() {
-          try {
-            while (true) {
-              const { value, done } = await reader.read();
-              if (done) break;
-              if (value === undefined) continue;
-              if (showHexEl.checked) {
-                const hex = Array.from(new TextEncoder().encode(value)).map(b => b.toString(16).padStart(2,'0')).join(' ');
-                logRx(hex);
-              } else {
-                logRx(value);
-              }
-            }
-          } catch (e) {
-            if (e.name !== 'AbortError') logErr(`Read error: ${e.message}`);
+  // Robust line reader: read until CR/LF, then short drain to catch tail bytes
+  async function readLine({timeoutMs=2500, drainMs=40}={}){
+    if(!port) return '';
+    const reader = port.readable.getReader();
+    const td = new TextDecoder();
+    let text='';
+    let timer;
+    try{
+      timer = setTimeout(()=>{ try{ reader.cancel(); }catch{} }, timeoutMs);
+      while(true){
+        const {value, done} = await reader.read();
+        if(done) break;
+        if(value){
+          text += td.decode(value, {stream:true});
+          if(/[\r\n]/.test(text)){
+            // brief drain to grab any remaining bytes after newline
+            await sleep(drainMs);
+            const { value:rest } = await reader.read();
+            if(rest) text += td.decode(rest, {stream:true});
+            break;
           }
-        })();
-
-        // Handle disconnect events from OS
-        port.addEventListener('disconnect', async () => {
-          logErr('Port was disconnected by the system.');
-          await disconnect();
-        }, { once: true });
-
-      } catch (e) {
-        logErr(`Open failed: ${e.message}`);
-        await disconnect();
-      }
-    }
-
-    async function disconnect() {
-      try {
-        if (reader) {
-          try { reader.releaseLock(); } catch {}
-          reader = null;
         }
-        if (readLoopAbort) {
-          try { readLoopAbort.abort(); } catch {}
-          readLoopAbort = null;
-        }
-        if (writer) {
-          try { writer.releaseLock(); } catch {}
-          writer = null;
-        }
-        if (port) {
-          try { await port.close(); } catch {}
-          port = null;
-        }
-      } finally {
-        btnConnect.disabled = false;
-        btnDisconnect.disabled = true;
-        statusEl.textContent = 'DISCONNECTED';
-        statusEl.style.borderColor = '#334155';
-        portNameEl.textContent = '—';
-        logSys('Port closed.');
       }
+    }catch(e){ /* timeout or cancel */ }
+    finally{ clearTimeout(timer); reader.releaseLock(); }
+    const t = text.trim(); if(t) log(JSON.stringify(t),'rx');
+    return t;
+  }
+
+  async function readChar({timeoutMs=800}={}){
+    if(!port) return '';
+    const reader = port.readable.getReader();
+    const td = new TextDecoder();
+    let out='';
+    let timer;
+    try{
+      timer = setTimeout(()=>{ try{ reader.cancel(); }catch{} }, timeoutMs);
+      const {value} = await reader.read();
+      if(value) out = td.decode(value).trim();
+    }catch(e){}
+    finally{ clearTimeout(timer); reader.releaseLock(); }
+    if(out) log(JSON.stringify(out),'rx');
+    return out;
+  }
+
+  async function writeChar(ch){ if(!writer) return; await writer.write(new Uint8Array([ch.charCodeAt(0)])); log(`'${ch}'`,'tx'); }
+
+  // --- Protocol ---
+  async function connect(){
+    try{
+      port = await navigator.serial.requestPort({});
+      await port.open({ baudRate:9600, dataBits:8, stopBits:1, parity:'none', bufferSize: 8192 }); // larger buffer for full records
+      writer = port.writable.getWriter();
+      $('#portName').textContent='Serial Port';
+      log('Connected');
+      $('#btnDisconnect').disabled=false;
+      $('#btnConnect').disabled=true;
+      // Do NOT auto-start anything else; require user to press Enter Universal
+      enablePostConnect(true);
+    }catch(e){ log('Connect error: '+e); }
+  }
+
+  async function disconnect(){ stopAuto(); try{ if(writer){ writer.releaseLock(); writer=null; } }catch{} try{ if(port){ await port.close(); port=null; } }catch{} $('#btnDisconnect').disabled=true; $('#btnConnect').disabled=false; universalOK=false; enablePostConnect(false); setMode('Idle'); log('Disconnected'); }
+
+  function enablePostConnect(enabled){ ['#btnEnterUniversal','#btnIdentify','#btnAuto','#btnPollOnce','#btnStandby','#btnClearDevice'].forEach(id=>$(id).disabled = !enabled); }
+
+  async function enterUniversal(){
+    if(!port) return;
+    for(let i=0;i<10;i++){
+      await writeChar('U');
+      await sleep(200);
+      const resp = await readChar({timeoutMs:600});
+      if(resp.toUpperCase().includes('U')){ log('Universal mode acknowledged'); universalOK=true; $('#btnIdentify').disabled=false; $('#btnAuto').disabled=false; $('#btnStandby').disabled=false; $('#btnPollOnce').disabled=false; $('#btnClearDevice').disabled=false; return true; }
+      log('No response, retrying…');
+      await sleep(800);
     }
+    log('Universal mode failed');
+    return false;
+  }
 
-    async function sendCmd(cmd) {
-      if (!port || !writer) {
-        logErr('Not connected.');
-        return;
-      }
-      const term = terminatorEl.value
-        .replace(/\\r/g, '\r')
-        .replace(/\\n/g, '\n');
-      const payload = cmd + term;
-      try {
-        await writer.write(new TextEncoder().encode(payload));
-        if (echoTxEl.checked) logTx(JSON.stringify(payload));
-      } catch (e) {
-        logErr(`Write failed: ${e.message}`);
-      }
-    }
+  async function identify(){ if(!universalOK) return; await writeChar('T'); const s = await readLine({timeoutMs:1500}); if(s){ setModel(s.split(/\s+/)[0]); } }
 
-    // --- UI events ---
-    btnConnect.addEventListener('click', connect);
-    btnDisconnect.addEventListener('click', disconnect);
+  function startAuto(){ if(!universalOK) return; stopAuto(); autoTimer = setInterval(requestRecord, 1000); }
+  function stopAuto(){ if(autoTimer) clearInterval(autoTimer); autoTimer=null; }
 
-    btnSend.addEventListener('click', () => {
-      const v = customCmdEl.value.trim();
-      if (v) sendCmd(v);
-    });
-    customCmdEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); btnSend.click(); }
-    });
+  async function autoCommand(){ if(!universalOK) return; await writeChar('a'); await sleep(50); await writeChar('d'); startAuto(); setMode('Counting'); }
 
-    btnClear.addEventListener('click', () => { logEl.textContent = ''; });
+  async function standby(){ if(!universalOK) return; await writeChar('h'); setMode('Stopped'); stopAuto(); }
 
-    btnSave.addEventListener('click', () => {
-      const blob = new Blob([logEl.textContent], { type: 'text/plain;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `metone_log_${new Date().toISOString().replace(/[:.]/g,'-')}.txt`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
+  async function clearDeviceBuffer(){ if(!universalOK) return; await writeChar('C'); log('Requested device buffer clear (C).'); }
 
-    // --- Presets helpers: quickly set 8E1 (Met One) ---
-    // Defaults here aim for Met One family; adjust if needed
-    baudEl.value = '9600';
-    dataBitsEl.value = '8';
-    parityEl.value = 'none';
-    stopBitsEl.value = '1';
+  async function pollOnce(){ if(!universalOK) return; await requestRecord(); }
 
-    // Quality-of-life: warn if page not secure
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-      logErr('Web Serial requires HTTPS (or localhost).');
-    }
+  function parseRecord(s){ try{ const parts=s.trim().split(/\s+/); if(parts[0]==='$' || /^A[`\s]?/.test(parts[0])) parts.shift(); const out={date:parts[0],time:parts[1],period:parts[2],channels:{},av:null,flow:null,loc:null,cs:null,raw:s.trim()}; let i=3; for(let k=0;k<6 && i+1<parts.length;k++){ const size=parts[i].replace(/\.$/,''); const cnt=parseInt(parts[i+1].replace(/[^0-9]/g,''))||0; out.channels[size]=cnt; i+=2; } while(i+1<parts.length){ const tag=parts[i]; const val=parts[i+1]; if(tag==='A/V') out.av=parseInt(val)||0; else if(tag==='FLO') out.flow=parseInt(val)||0; else if(tag==='LOC') out.loc=parseInt(val)||0; else if(tag==='C/S') out.cs=val; i+=2; } return out; }catch(e){ log('Parse error: '+e); return null; } }
+
+  async function requestRecord(){ await writeChar('A'); const line = await readLine({timeoutMs:2000, drainMs:80}); if(!line) return; const t=line.trim(); if(/^A#/.test(t)) return; let rec = t; if(/^A[\s`]/.test(rec)) rec = rec.replace(/^A[\s`]*/, ''); if(/^\$\s*/.test(rec)) rec = rec.replace(/^\$\s*/, ''); log('Record: '+rec); const parsed = parseRecord(rec); if(!parsed){ log('Record parse failed'); return; } // You can update UI/graphs here as needed.
+  }
+
+  // --- Wire UI ---
+  $('#btnConnect').onclick = connect;
+  $('#btnDisconnect').onclick = disconnect;
+  $('#btnEnterUniversal').onclick = enterUniversal;
+  $('#btnIdentify').onclick = identify;
+  $('#btnAuto').onclick = autoCommand;
+  $('#btnPollOnce').onclick = pollOnce;
+  $('#btnStandby').onclick = standby;
+  $('#btnClearDevice').onclick = clearDeviceBuffer;
+
+  if(!('serial' in navigator)){
+    log('WebSerial not supported in this browser. Use a recent Chrome/Edge.');
+    $('#btnConnect').disabled = true;
+  }
   </script>
 </body>
 </html>
