@@ -171,75 +171,147 @@
       #chartFLO {
         display: block; /* ensure block-level so it fills the parent */
       }
+
+      /* Vertical stack layout instead of side-by-side */
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* Keep controls compact */
+      .controls-card {
+        /* optional: prevents controls card from stretching too tall */
+        padding-bottom: 12px;
+      }
+
+      /* Let the tabs area dominate */
+      .tabs-card {
+        flex: 1; /* grow to fill remaining vertical space when available */
+        width: 100%; /* use full width */
+      }
+
+      /* If you want the graphs/tabs to have a minimum height */
+      #tab-graphs .row .card .chart-box {
+        height: 300px; /* you already set this; keep/tweak as desired */
+      }
+
+      /* OPTIONAL: if you have global .card { flex: 1; } and it causes tall controls:
+   override here so the controls card doesn't stretch vertically */
+      .controls-card {
+        flex: 0 0 auto;
+      }
+
+      /* Highlights for prominent actions */
+      button.emphasis-green {
+        background: #32d296; /* bright green */
+        color: #06121e;
+        border-color: transparent;
+        font-weight: 700;
+      }
+      button.emphasis-red {
+        background: #ff6b6b; /* bright red */
+        color: #06121e;
+        border-color: transparent;
+        font-weight: 700;
+      }
+
+      @media (min-width: 900px) {
+        .tabs-card {
+          /* just examples; tweak to taste */
+          padding: 16px 20px;
+        }
+      }
+
+      /* Compact horizontal toolbar */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap; /* wrap on narrow screens */
+        margin-top: 8px;
+      }
+
+      /* Make buttons smaller & tighter */
+      button.compact {
+        padding: 6px 10px; /* was 10px 14px */
+        font-size: 12px; /* was 14px */
+        border-radius: 8px; /* was 10px */
+      }
+
+      /* Inputs inline and compact */
+      .field.compact input[type="number"] {
+        width: 64px; /* was 80px */
+        padding: 4px 6px; /* was 6px 8px */
+        font-size: 12px;
+      }
+
+      /* Dim hints and keep inline */
+      .hint.inline {
+        margin-left: 6px;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+
+      /* Optional: push right-side items to the end */
+      .toolbar .spacer {
+        flex: 1;
+      }
     </style>
   </head>
   <body>
     <h1>
-      Met One 3315 – WebSerial Interface
+      Met One OPC – WebSerial Interface
       <span class="pill"
         ><i class="status-dot" id="modeDot"></i
         ><span id="modeText">DISCONNECTED</span></span
       >
     </h1>
 
-    <div class="row wrap">
-      <div class="card" style="max-width: 980px">
+    <div class="stack">
+      <div class="card controls-card">
         <div class="row" style="gap: 12px">
           <div class="kv"><b>Port</b><span id="portName">—</span></div>
           <div class="kv"><b>Model</b><span id="model">—</span></div>
           <div class="kv"><b>Mode</b><span id="mode">Idle</span></div>
         </div>
-        <div class="controls">
-          <button id="btnConnect" class="primary">Connect</button>
-          <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
-        </div>
-        <div
-          class="controls"
-          style="border-top: 1px solid var(--line); padding-top: 10px"
-        >
-          <button id="btnEnterUniversal">
-            Enter Universal ('U' until echo)
-          </button>
-          <button id="btnIdentify" disabled>Identify ('T')</button>
-          <button id="btnAuto" disabled>Auto Start ('a'+'d')</button>
-          <button id="btnPollOnce" disabled>Poll Record Once ('A')</button>
-          <button id="btnStandby" class="ghost" disabled>Standby ('h')</button>
-          <button id="btnClearDevice" class="ghost" disabled>
-            Clear device buffer ('C')
-          </button>
-          <span class="hint"
-            >Idle after Connect. Nothing runs until you press a button.</span
-          >
-        </div>
-        <div
-          class="controls"
-          style="border-top: 1px solid var(--line); padding-top: 10px"
-        >
-          <button id="btnPickFile" disabled>Pick CSV file…</button>
-          <span class="field"
-            >Every
-            <input id="saveEvery" type="number" min="1" value="10" /> s</span
-          >
-          <button id="btnAutoSaveEnable" disabled>Enable Auto‑Save</button>
-          <button id="btnAutoSaveDisable" disabled>Stop Auto‑Save</button>
-          <button id="btnExportNow" disabled>Export Buffer CSV</button>
-          <button id="btnClearLocal" disabled>Clear Local Buffer</button>
-          <span class="hint" id="saveHint">auto‑save not set</span>
-        </div>
+      </div>
+      <div class="toolbar">
+        <!-- Left group: connection + start -->
+        <button id="btnConnect" class="primary compact">Connect</button>
+        <button id="btnDisconnect" class="ghost compact" disabled>
+          Disconnect
+        </button>
+        <button id="btnStartCounting" class="compact" disabled>
+          Start Counting
+        </button>
+
+        <button id="btnStandby" class="ghost compact" disabled>STOP</button>
+        <button id="btnClearDevice" class="ghost compact" disabled>
+          Clear Buffer
+        </button>
+
+        <span class="spacer"></span>
+
+        <!-- Right group: CSV/autosave -->
+        <button id="btnExportNow" class="compact" disabled>Export CSV</button>
+        <button id="btnClearLocal" class="ghost compact" disabled>
+          Clear Local
+        </button>
       </div>
 
-      <div class="card" style="min-width: 320px; max-width: 980px">
+      <div class="card tabs-card">
         <div class="tabs">
-          <button data-tab="raw" class="active">Raw</button>
-          <button data-tab="latest">Latest</button>
+          <button data-tab="raw">Raw</button>
+          <button data-tab="latest" class="active">Latest</button>
           <button data-tab="graphs">Graphs</button>
         </div>
 
-        <div id="tab-raw">
+        <div id="tab-raw" hidden>
           <div id="terminal"></div>
         </div>
 
-        <div id="tab-latest" hidden>
+        <div id="tab-latest">
           <div class="grid cols-4">
             <div class="kv"><b>Date</b><span id="kvDate">—</span></div>
             <div class="kv"><b>Time</b><span id="kvTime">—</span></div>
@@ -313,22 +385,55 @@
         d.className = "status-dot";
         if (m === "Counting") d.classList.add("run");
         if (m === "Stopped") d.classList.add("stop");
+        deviceMode = m;
       }
       function setModel(s) {
         $("#model").textContent = s || "—";
       }
       function updateUi() {
         const connected = !!port;
-        $("#btnEnterUniversal").disabled = !connected || universalOK;
-        $("#btnIdentify").disabled = !connected || !universalOK;
-        $("#btnAuto").disabled = !connected || !universalOK;
-        $("#btnPollOnce").disabled = !connected || !universalOK;
+
+        // Baseline enables for the remaining controls
+        //$("#btnPollOnce").disabled = !connected || !universalOK;
         $("#btnStandby").disabled = !connected || !universalOK;
         $("#btnClearDevice").disabled = !connected || !universalOK;
-        $("#btnPickFile").disabled = !connected;
+        //$("#btnPickFile").disabled = !connected;
         $("#btnExportNow").disabled = !connected;
         $("#btnClearLocal").disabled = !connected;
-        $("#btnAutoSaveEnable").disabled = !connected;
+        //$("#btnAutoSaveEnable").disabled = !connected;
+
+        // Start Counting button: enabled after connect, disabled once counting
+        const startBtn = $("#btnStartCounting");
+        const standbyBtn = $("#btnStandby");
+
+        startBtn.disabled = !connected || deviceMode === "Counting";
+        standbyBtn.disabled = !connected || !universalOK;
+
+        // Highlights
+        startBtn.classList.remove("emphasis-green");
+        standbyBtn.classList.remove("emphasis-red");
+
+        // After connect & NOT counting → guide user to Start
+        if (
+          (connected && deviceMode === "Stopped") ||
+          deviceMode === "Idle" ||
+          deviceMode === "Holding"
+        ) {
+          startBtn.classList.add("emphasis-green");
+          startBtn.disabled = false;
+          standbyBtn.classList.remove("emphasis-red");
+          standbyBtn.disabled = true;
+        }
+
+        console.log(
+          `Connected: ${connected}, Universal: ${universalOK}, Device Mode: ${deviceMode}`
+        );
+        // While counting → guide user to Standby
+        if (connected && universalOK && deviceMode === "Counting") {
+          standbyBtn.classList.add("emphasis-red");
+          startBtn.classList.remove("emphasis-green");
+          startBtn.disabled = true;
+        }
       }
 
       /*************** Serial state ***************/
@@ -337,6 +442,8 @@
       let autoTimer = null;
       let modeTimer = null;
       let ioBusy = false;
+      let deviceMode = "Idle"; // 'Idle' | 'Counting' | 'Holding' | 'Stopped'
+
       async function writeChar(ch) {
         if (!writer) return;
         await writer.write(new Uint8Array([ch.charCodeAt(0)]));
@@ -511,26 +618,7 @@
           log("Auto‑save error: " + e);
         }
       }
-      function enableAutosave() {
-        if (!fileHandle) {
-          setSaveHint("Pick a CSV file first");
-          return;
-        }
-        autosave = true;
-        const sec = Math.max(1, parseInt($("#saveEvery").value || "10"));
-        $("#btnAutoSaveEnable").disabled = true;
-        $("#btnAutoSaveDisable").disabled = false;
-        setSaveHint("Auto‑saving every " + sec + "s");
-        autosaveTimer = setInterval(flushAutosave, sec * 1000);
-      }
-      function disableAutosave() {
-        autosave = false;
-        if (autosaveTimer) clearInterval(autosaveTimer);
-        autosaveTimer = null;
-        $("#btnAutoSaveEnable").disabled = false;
-        $("#btnAutoSaveDisable").disabled = true;
-        setSaveHint("Auto‑save stopped");
-      }
+
       function downloadCSVNow() {
         if (buffer.length === 0) {
           log("No buffered records to export");
@@ -859,7 +947,9 @@
             bufferSize: 8192,
           });
           writer = port.writable.getWriter();
-          $("#portName").textContent = "Serial Port";
+          $("#portName").textContent = port.getInfo().usbProductId
+            ? `USB PID ${port.getInfo().usbProductId}`
+            : "Serial Port";
           log("Connected");
           $("#btnDisconnect").disabled = false;
           $("#btnConnect").disabled = true;
@@ -890,6 +980,36 @@
         updateUi();
         log("Disconnected");
       }
+
+      // Combined action: enter universal mode (if needed) then start auto counting
+      async function startCounting() {
+        if (!port) {
+          log("No port connected.");
+          return;
+        }
+
+        // If not in universal mode yet, enter it
+        if (!universalOK) {
+          log("Attempting Universal mode…");
+          const ok = await enterUniversal(); // already sets universalOK & starts mode polling
+          if (!ok) {
+            log("Universal mode failed. Cannot start counting.");
+            return;
+          }
+        }
+
+        // Identify the device (set model UI); continue even if this fails
+        const idOK = await identify();
+        if (!idOK) {
+          log("Identify did not return a model; continuing…");
+        }
+
+        // Now start auto counting (sends 'a' then 'd' and starts polling loop)
+        await autoCommand();
+        log("Counting started (auto).");
+        updateUi();
+      }
+
       async function enterUniversal() {
         if (!port) return;
         for (let i = 0; i < 10; i++) {
@@ -910,13 +1030,20 @@
         return false;
       }
       async function identify() {
-        if (!universalOK) return;
+        if (!universalOK) return false;
         await writeChar("T");
         const s = await readLine({ timeoutMs: 1500 });
         if (s) {
-          setModel(s.split(/\s+/)[0]);
+          // Example responses: "3315", "2400", etc — take first token
+          const mdl = s.trim().split(/\s+/)[0];
+          setModel(mdl);
+          log("Identified model: " + mdl);
+          return true;
         }
+        log("Identify returned no data.");
+        return false;
       }
+
       function startAuto() {
         if (!universalOK) return;
         stopAuto();
@@ -939,6 +1066,7 @@
         await writeChar("h");
         setMode("Stopped");
         stopAuto();
+        updateUi();
       }
       async function clearDeviceBuffer() {
         if (!universalOK) return;
@@ -961,6 +1089,7 @@
           if (c.indexOf("C") === 0) setMode("Counting");
           else if (c.indexOf("H") === 0) setMode("Holding");
           else if (c.indexOf("S") === 0) setMode("Stopped");
+          updateUi();
         } catch (e) {
         } finally {
           ioBusy = false;
@@ -1199,15 +1328,16 @@
       /*************** Wire UI ***************/
       $("#btnConnect").onclick = connect;
       $("#btnDisconnect").onclick = disconnect;
-      $("#btnEnterUniversal").onclick = enterUniversal;
-      $("#btnIdentify").onclick = identify;
-      $("#btnAuto").onclick = autoCommand;
-      $("#btnPollOnce").onclick = pollOnce;
+      $("#btnStartCounting").onclick = startCounting;
+      //$("#btnEnterUniversal").onclick = enterUniversal;
+      //$("#btnIdentify").onclick = identify;
+      //$("#btnAuto").onclick = autoCommand;
+      //$("#btnPollOnce").onclick = pollOnce;
       $("#btnStandby").onclick = standby;
       $("#btnClearDevice").onclick = clearDeviceBuffer;
-      $("#btnPickFile").onclick = pickFile;
-      $("#btnAutoSaveEnable").onclick = enableAutosave;
-      $("#btnAutoSaveDisable").onclick = disableAutosave;
+      //$("#btnPickFile").onclick = pickFile;
+      //$("#btnAutoSaveEnable").onclick = enableAutosave;
+      //$("#btnAutoSaveDisable").onclick = disableAutosave;
       $("#btnExportNow").onclick = downloadCSVNow;
       $("#btnClearLocal").onclick = clearLocal;
 
